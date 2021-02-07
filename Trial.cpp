@@ -42,6 +42,7 @@ public:
     vector<string> Alphabet;
 
     DFAutomaton(NFAutomaton);
+    friend ostream& operator<<(ostream& os, DFAutomaton& dfa);
 };
 
 State::State(vector<string> Alphabet)
@@ -178,8 +179,6 @@ NFAutomaton::NFAutomaton(string Filename)
     int NumberOfStates;
     
    
-
-
     //Read Number of States
     File >> NumberOfStates;
     
@@ -287,7 +286,6 @@ DFAutomaton::DFAutomaton(NFAutomaton nfa)
     int counter = 0;
     for(counter; counter < States.size(); counter++)
     {
-    
         for(int i = 0; i < Alphabet.size(); i++)
         {
             State temp(Alphabet);
@@ -311,16 +309,96 @@ DFAutomaton::DFAutomaton(NFAutomaton nfa)
                 States.insert(States.end(), temp);
                 if(temp.Final)
                 {
-                    FinalState += " ";
                     FinalState += temp.Name;
+                    FinalState += " ";
                 }
             }
+        }   
+    }
+}
+
+ostream& operator<<(ostream& os, DFAutomaton& dfa)
+{
+    //Print number of states
+    os << dfa.States.size() << "\t// To αυτόματο έχει " << dfa.States.size() << " καταστάσεις" << endl;
+    
+    //Print alphabet
+    for(int i=0; i<dfa.Alphabet.size(); i++)
+    {
+        os << dfa.Alphabet[i] << " ";
+    }
+    os << "\t// To αλφάβητο έχει " << dfa.Alphabet.size() << " σύμβολα" << endl;
+
+    //Print First State
+    os << dfa.FirstState << "\t// Αρχική κατάσταση είναι η q" << dfa.FirstState << endl;
+
+    //Print Final State
+    //Format it as needed (remove q)
+    string s = dfa.FinalState;
+    size_t pos = 0; //initialization for substr 
+    string token,StrippedQString = "",delimiter = "q"; //defining the delimeter
+    while ((pos = s.find(delimiter)) != delimiter.npos) //repeatitive parsing for alphabet length > 2 
+    {
+        token = s.substr(0, pos); //get substr
+        StrippedQString += token ;//store it
+        s.erase(0, pos + delimiter.length()); //erasure necessary due to string.find() used 
+    }
+    StrippedQString += s ;
+    
+    os << StrippedQString << "\t// Τελική/ές κατάσταση/εις είναι η/οι " << dfa.FinalState << endl;
+
+    //Print State Transitions
+    for(int i = 0; i < dfa.States.size(); i++)
+    {
+
+        if(dfa.States[i].Name == "")
+        {
+            dfa.States[i].Name = "ε";
         }
 
-        
+        string OriginState = dfa.States[i].Name;
+        size_t pos = 0; //initialization for substr 
+        string delimiter = "q"; //defining the delimeter
+        while ((pos = OriginState.find(delimiter)) != delimiter.npos) //repeatitive parsing for alphabet length > 2 
+        {
+            OriginState.replace(pos,1,"");
+        }
+
+        for(int j = 0; j < dfa.Alphabet.size(); j++)
+        {
+            string DestinationState = dfa.States[i].AvailableTransitions[dfa.Alphabet[j]];
+            
+            if(DestinationState == "")
+            {
+                DestinationState = "ε";
+            }
+
+            os << OriginState << " " << dfa.Alphabet[j] << " " << DestinationState;
+            os << "\t// Αν το αυτόματο είναι στην κατάσταση " << dfa.States[i].Name;
+            os << " με " << dfa.Alphabet[j] << " θα μεταβεί στην κατάσταση ";
+            
+            string DestinationStateWithQ = "";
+
+            if (DestinationState != "ε")
+            {
+                for(int z = 0; z < DestinationState.length(); z++)
+                {
+                    DestinationStateWithQ += "q";
+                    DestinationStateWithQ += DestinationState[z]; 
+                }
+            }
+            else
+            {
+                DestinationStateWithQ = "ε"; 
+            }
+            
+            
+            os << DestinationStateWithQ << endl;
+        }
     }
 
 
+    return os;
 }
 
 int main(void)
@@ -328,19 +406,10 @@ int main(void)
 
     NFAutomaton a("Dfa.txt");
 
-
-    
     DFAutomaton d(a);
-    
 
-
-    vector<State>::iterator it = d.States.begin();
-    for(it; it != d.States.end(); it++)
-    {
-        
-        cout << it->Name << " " << it->AvailableTransitions["0"] << " " <<  it->AvailableTransitions["1"] << endl;
-        
-    }
+    ofstream file("DeterministocFA.txt");
+    file << d;
 
     return 0;
 }
